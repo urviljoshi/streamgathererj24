@@ -17,11 +17,12 @@ public class Main {
         //fixWindowSliding(blogs);
         //foldScan(blogs);
         //mapConcurrentDemo(blogs);
+        latestPostsforAllCatagoriesGatherer(blogs);
     }
 
     private static void latestPostsforAllCatagoriesGatherer(List<BlogPost> blogs) {
         Map<String,List<BlogPost>> copies =  blogs.stream()
-                .gather(BlogGatherer)
+                .gather(BlogGatherer.createSampleBlogPosts(BlogPost::category,Comparator.comparing(BlogPost::publishedDate).reversed(),3))
                 .collect(Collectors.toMap(Map.Entry::getKey,Map.Entry::getValue));
         printBlogsMap(copies);
     }
