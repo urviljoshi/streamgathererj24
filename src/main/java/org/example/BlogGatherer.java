@@ -4,19 +4,18 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Gatherer;
-import java.util.stream.Gatherers;
 
 public class BlogGatherer {
     private BlogGatherer() {} // not to be init
 
-    public static <K> Gatherer<BlogPost, Map<K, List<BlogPost>>, Map.Entry<K,List<BlogPost>>> createSampleBlogPosts(
-            Function<? super BlogPost, ? extends K> keyExtractor,
-            Comparator<? super BlogPost> comparator,
+    public static <K> Gatherer<Books, Map<K, List<Books>>, Map.Entry<K,List<Books>>> createSampleBlogPosts(
+            Function<? super Books, ? extends K> keyExtractor,
+            Comparator<? super Books> comparator,
             int limit
     ) {
 return Gatherer.of(
         //  Initialize with an empty map to store our grouped items
-            HashMap<K,List<BlogPost>>::new,
+            HashMap<K,List<Books>>::new,
         // Process each blog post
         (map,post,downstream) -> {
                 // group post based
@@ -30,7 +29,7 @@ return Gatherer.of(
         (map,downstream)->
                 // Sort the posts and limit to the specified number
                 map.forEach((key, post) -> {
-                    List<BlogPost> limitedPost = post.stream().sorted(comparator)
+                    List<Books> limitedPost = post.stream().sorted(comparator)
                             .limit(limit)
                             .collect(Collectors.toList());
                     // Emit a Map.Entry with the key and limited posts
