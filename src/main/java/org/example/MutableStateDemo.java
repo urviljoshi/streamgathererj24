@@ -10,25 +10,25 @@ public class MutableStateDemo {
 
         var nums = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-
-        Predicate<Integer> criteria = i ->  i == 4;
+        Predicate<Integer> criteria = i -> i == 4;
         class Switch {
-            boolean enable;
+            boolean enable = false;
         }
+
         Gatherer<Integer, Switch, Integer> dropWhileGatherer = Gatherer.ofSequential(
-                // initalizer
                 Switch::new,
-                (sw, element, downstream) -> {
-                    if(sw.enable) {
-                        return downstream.push(element);
-                    }else if(criteria.test(element)) {
-                        sw.enable = true;
-                        return downstream.push(element);
-                    }else {
-                        return true;
-                    }
-                }
-        );
+                (sw,  element, downstream) ->
+        {
+            if(sw.enable){
+                return downstream.push(element);
+            }else if(criteria.test(element)){
+                sw.enable = true;
+                return downstream.push(element);
+            }else {
+                return true;
+            }
+
+        });
 
         var numsDropWhile = nums.stream()
                 .gather(dropWhileGatherer)

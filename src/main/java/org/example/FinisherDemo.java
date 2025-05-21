@@ -11,18 +11,13 @@ public class FinisherDemo {
 
         //distinct sorting
         Gatherer<Integer, TreeSet<Integer>, Integer> sortGatherer = Gatherer.ofSequential(
-                // initalizer
                 TreeSet::new,
-                (set, element, _) -> {
+                (set, element, downstream) -> {
                     set.add(element);
                     return true;
                 },
-                // no more element to push so no element here
-                (set, downstream) -> {
-                    // you need to check if downstream is rejecting or not if you do not does not matter it will anyway not use them you will waster cpu cycles
-                    set.stream()
-                            //.takeWhile(_ -> !downstream.isRejecting()).forEach(downstream::push);
-                            .allMatch(downstream::push);
+                (set,  downstream) -> {
+                    set.stream().allMatch(downstream::push);
                 }
         );
 

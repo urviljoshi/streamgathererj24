@@ -1,6 +1,7 @@
 package org.example;
 
 
+import java.awt.print.Book;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -11,24 +12,34 @@ import java.util.stream.Gatherers;
 public class Main {
 
     public static void main(String[] args) {
-        var blogs = createSampleBlogPosts();
-        foldScan(blogs);
+        var books = createSampleBooks();
+        mapConcurrentDemo(books);
     }
 
-    // prior to java 24 group by using catagory and give me latest 3 published blogs
-    private static void latestPostsforAllCatagoriesWay1(List<Books> blogs) {
-        Map<String,List<Books>> copies =  blogs.stream().collect(Collectors
-                .groupingBy(Books::category,
+    private static void latestBooksforAllCatagoriesGatherer(List<Books> books){
+        Map<String,List<Books>> copies = books.stream()
+        .gather(BooksGatherer.createSampleBooksGatherer(Books::category, Comparator.comparing(Books::publishedDate).reversed(), 2))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        printbooksMap(copies);
+    }
+
+    // prior to java 24 group by using category and give me latest 2 published books
+    private static void latestBooksforAllCatagoriesWay1(List<Books> books) {
+        Map<String,List<Books>> copies = books.stream()
+                // group by category
+                .collect(Collectors.groupingBy(Books::category,
+                        // collect books to list
                         Collectors.collectingAndThen(Collectors.toList(),
-                                blogPosts -> blogPosts.stream()
-                                        .sorted(Comparator.comparing(Books::publishedDate)
-                                                .reversed())
-                                        .limit(3).toList())));
-        printBlogsMap(copies);
+                                // sorting by published Date
+                                bs -> bs.stream().sorted(Comparator.comparing(Books::publishedDate).reversed())
+                                        // limit to 2
+                                        .limit(2)
+                                        .toList())));
+        printbooksMap(copies);
     }
 
-    private static void latestPostsforAllCatagoriesWay2(List<Books> blogs) {
-        Map<String,List<Books>> copies =  blogs.stream()
+    private static void latestBooksforAllCatagoriesWay2(List<Books> books) {
+        Map<String,List<Books>> copies =  books.stream()
                 .collect(Collectors.groupingBy(Books::category))
                 .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                         e -> e.getValue().stream()
@@ -36,18 +47,12 @@ public class Main {
                                 .limit(3)
                                 .toList()));
 
-        printBlogsMap(copies);
+        printbooksMap(copies);
     }
 
-    private static void latestPostsforAllCatagoriesGatherer(List<Books> blogs) {
-        Map<String,List<Books>> copies =  blogs.stream()
-                .gather(BlogGatherer.createSampleBlogPosts(Books::category,Comparator.comparing(Books::publishedDate).reversed(),3))
-                .collect(Collectors.toMap(Map.Entry::getKey,Map.Entry::getValue));
-        printBlogsMap(copies);
-    }
 
-    private static void fixWindowSized(List<Books> blogs) {
-        blogs.stream().limit(9).
+    private static void fixWindowSized(List<Books> books) {
+        books.stream().limit(9).
                 gather(Gatherers.windowFixed(3))
                 .forEach(batch -> {
                     System.out.println("Batch");
@@ -56,8 +61,8 @@ public class Main {
 
     }
 
-    private static void fixWindowSliding(List<Books> blogs) {
-        blogs.stream().limit(9).
+    private static void fixWindowSliding(List<Books> books) {
+        books.stream().limit(9).
                 gather(Gatherers.windowSliding(2))
                 .forEach(window -> {
                     System.out.println("Window");
@@ -66,52 +71,48 @@ public class Main {
 
     }
 
-    private static void foldDemo(List<Books> blogs) {
-        blogs.stream().limit(9).
+    private static void foldDemo(List<Books> books) {
+        books.stream().limit(9).
                 gather(Gatherers.fold( () -> "All titles: ", (res,po) -> res.concat(po.title()).concat(",")))
                 .forEach(System.out::println);
     }
 
-    private static void foldScan(List<Books> blogs) {
-        blogs.stream().limit(9).
+    private static void scanDemo(List<Books> books) {
+        books.stream().limit(9).
                 gather(Gatherers.scan( () -> "Titles so far ", (res,po) -> res.concat(po.title()).concat(",")))
                 .forEach(System.out::println);
 
     }
 
-    //run gatherer in paralllel even if your stream is sequential
-    private static void mapConcurrentDemo(List<Books> blogs){
-        blogs.stream().
+    //run gatherer in parallel even if your stream is sequential
+    private static void mapConcurrentDemo(List<Books> books){
+        books.stream().
                 gather(Gatherers.mapConcurrent(
                         // these are virtual threads
                         4,
-                        books ->
+                        b ->
                 {
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                    return Map.entry(books.title(), books.title().length());
+                    return Map.entry(b.title(), b.title().length());
 
                 })).forEach(entry -> System.out.println("Key : "+entry.getKey() +"   value:: "+entry.getValue() ) );
     }
 
 
-
-
-
-
-    private static void printBlogsMap(Map<String, List<Books>> copies) {
-    copies.forEach((category, blogPosts) -> {
+    private static void printbooksMap(Map<String, List<Books>> copies) {
+    copies.forEach((category, blogBooks) -> {
         System.out.println("catagory :: "+category);
-        blogPosts.forEach(System.out::println);
+        blogBooks.forEach(System.out::println);
     });
     }
 
 
 
-    private static List<Books> createSampleBlogPosts() {
+    private static List<Books> createSampleBooks() {
         return List.of(
                 new Books(
                         1L,
